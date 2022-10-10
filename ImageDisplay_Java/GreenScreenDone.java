@@ -6,11 +6,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
-
-//这个代码原版就很烂
 public class GreenScreenDone {
 
-    public static int frameNum = 10;
+    public static int frameNum = 480;
 
     JFrame frame;
     JLabel lbIm1;
@@ -68,7 +66,6 @@ public class GreenScreenDone {
 //                    b = (byte) (pix & 0xff);
 //                    g = (byte) (pix >> 8 & 0xff);
 //                    r = (byte) (pix >> 16 & 0xff);
-//                   可以通过Byte.toUnSignedInt()获取真实的rgb值
                     //int pix = ((a << 24) + (r << 16) + (g << 8) + b);
                     img.setRGB(x, y, pix);
                     ind++;
@@ -128,7 +125,6 @@ public class GreenScreenDone {
                 b = foreGroundPix & 0xff;
                 g = foreGroundPix >> 8 & 0xff;
                 r = foreGroundPix >> 16 & 0xff;
-//                如果是绿幕
                 double[] hsv = RGB_HSV_Converter.rgb2hsv(new int[]{r, g, b});
 
                 if (hsv[0] >= hdown && hsv[0] <= hup && hsv[1] >= sdown && hsv[2] >= vdown) {
@@ -150,7 +146,6 @@ public class GreenScreenDone {
                 b = foreGroundPix & 0xff;
                 g = foreGroundPix >> 8 & 0xff;
                 r = foreGroundPix >> 16 & 0xff;
-//                如果是绿幕
                 double[] hsv = RGB_HSV_Converter.rgb2hsv(new int[]{r, g, b});
 
                 if (hsv[0] >= hdown && hsv[0] <= hup && hsv[1] >= sdown && hsv[2] >= vdown) {
@@ -167,7 +162,6 @@ public class GreenScreenDone {
 //                b = (byte) (pix & 0xff);
 //                g = (byte) (pix>>8 & 0xff);
 //                r = (byte)(pix>>16 &0xff);
-////                   可以通过Byte.toUnSignedInt()获取真实的rgb值
 //                //int pix = ((a << 24) + (r << 16) + (g << 8) + b);
 //                img.setRGB(x, y, pix);
 //                ind++;
@@ -176,6 +170,56 @@ public class GreenScreenDone {
         combinedImages.add(newImg);
     }
 
+    public void combine2NewImageStratEndVersion(double hError, double sError, double vError) {
+        int foreGroundPix, nextForeGroundPix, r, g, b, nr, ng, nb;
+        int startx=0,endx=0;
+        double[] hsv, nhsv;
+        newImg = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                foreGroundPix = foreGround.getRGB(x, y);
+                b = foreGroundPix & 0xff;
+                g = foreGroundPix >> 8 & 0xff;
+                r = foreGroundPix >> 16 & 0xff;
+                nextForeGroundPix = nextForeGround.getRGB(x, y);
+                nb = nextForeGroundPix & 0xff;
+                ng = nextForeGroundPix >> 8 & 0xff;
+                nr = nextForeGroundPix >> 16 & 0xff;
+                hsv = RGB_HSV_Converter.rgb2hsv(new int[]{r, g, b});
+                nhsv = RGB_HSV_Converter.rgb2hsv(new int[]{nr, ng, nb});
+
+                if (Math.abs(hsv[0] - nhsv[0]) <= hError && Math.abs(hsv[1] - nhsv[1]) <= sError && Math.abs(hsv[2] - nhsv[2]) <= vError) {
+                    newImg.setRGB(x, y, backGround.getRGB(x, y));
+                } else {
+                    startx = x;
+                    break;
+                }
+            }
+            for (int x = width-1; x >-1 ; x--) {
+                foreGroundPix = foreGround.getRGB(x, y);
+                b = foreGroundPix & 0xff;
+                g = foreGroundPix >> 8 & 0xff;
+                r = foreGroundPix >> 16 & 0xff;
+                nextForeGroundPix = nextForeGround.getRGB(x, y);
+                nb = nextForeGroundPix & 0xff;
+                ng = nextForeGroundPix >> 8 & 0xff;
+                nr = nextForeGroundPix >> 16 & 0xff;
+                hsv = RGB_HSV_Converter.rgb2hsv(new int[]{r, g, b});
+                nhsv = RGB_HSV_Converter.rgb2hsv(new int[]{nr, ng, nb});
+
+                if (Math.abs(hsv[0] - nhsv[0]) <= hError && Math.abs(hsv[1] - nhsv[1]) <= sError && Math.abs(hsv[2] - nhsv[2]) <= vError) {
+                    newImg.setRGB(x, y, backGround.getRGB(x, y));
+                } else {
+                    endx = x;
+                    break;
+                }
+            }
+            for (int i = startx; i <=endx ; i++) {
+                newImg.setRGB(i, y, foreGround.getRGB(i, y));
+            }
+        }
+        combinedImages.add(newImg);
+    }
     public void combine2NewImage(double hError, double sError, double vError) {
         int foreGroundPix, nextForeGroundPix, r, g, b, nr, ng, nb;
         double[] hsv, nhsv;
@@ -190,30 +234,16 @@ public class GreenScreenDone {
                 nb = nextForeGroundPix & 0xff;
                 ng = nextForeGroundPix >> 8 & 0xff;
                 nr = nextForeGroundPix >> 16 & 0xff;
-//                如果是绿幕
                 hsv = RGB_HSV_Converter.rgb2hsv(new int[]{r, g, b});
                 nhsv = RGB_HSV_Converter.rgb2hsv(new int[]{nr, ng, nb});
 
                 if (Math.abs(hsv[0] - nhsv[0]) <= hError && Math.abs(hsv[1] - nhsv[1]) <= sError && Math.abs(hsv[2] - nhsv[2]) <= vError) {
-//                    如果变化很小那么是背景，替换成我们想要的背景
                     newImg.setRGB(x, y, backGround.getRGB(x, y));
                 } else {
-//                    变化只要打一点点就是需要的物体
+//                    startx = x;
+//                    break;
                     newImg.setRGB(x, y, foreGroundPix);
                 }
-//                byte a = 0;
-//                byte r = bytes[ind];
-//                byte g = bytes[ind + height * width];
-//                byte b = bytes[ind + height * width * 2];
-//
-//                int pix = 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
-//                b = (byte) (pix & 0xff);
-//                g = (byte) (pix>>8 & 0xff);
-//                r = (byte)(pix>>16 &0xff);
-////                   可以通过Byte.toUnSignedInt()获取真实的rgb值
-//                //int pix = ((a << 24) + (r << 16) + (g << 8) + b);
-//                img.setRGB(x, y, pix);
-//                ind++;
             }
         }
         combinedImages.add(newImg);
@@ -223,7 +253,7 @@ public class GreenScreenDone {
         foreGround = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         backGround = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         getPictures(pics, new BufferedImage[]{foreGround, backGround});
-        combine2NewImageGS(80, 170, 0.16, 0.33);
+        combine2NewImageGS(100, 176, 0.16, 0.33);
 //        showCombinedImgWithoutNewFrame();
     }
 
@@ -233,7 +263,8 @@ public class GreenScreenDone {
         nextForeGround = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         getPictures(pics, new BufferedImage[]{foreGround, backGround, nextForeGround});
 //        combine2NewImage(0.000000000000001, 0.000000000000001, 0.000000000000001);
-        combine2NewImage(4, 2, 2);
+//        combine2NewImageStratEndVersion(5, 3, 3);
+        combine2NewImage(0, 0, 0);
 //        showCombinedImgWithoutNewFrame();
     }
 
